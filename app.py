@@ -5,10 +5,38 @@ import plotly.graph_objects as go
 import re
 
 # ==========================================
-# 1. ตั้งค่าหน้าเว็บ & CSS (Theme: Enterprise Clean)
+# 1. ตั้งค่าหน้าเว็บ (ต้องอยู่บรรทัดแรกสุดเสมอ)
 # ==========================================
 st.set_page_config(page_title="Helpdesk Executive Analytics", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 
+# ==========================================
+# 🔒 ระบบ Login ป้องกันคนนอก
+# ==========================================
+# เช็คสถานะการล็อกอิน
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+# ถ้ายังไม่ได้ล็อกอิน ให้แสดงหน้าจอใส่รหัสผ่าน
+if not st.session_state["authenticated"]:
+    st.markdown("<br><br><h2 style='text-align: center; color: #0F172A;'>🔒 Helpdesk Analytics Login</h2>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        st.info("💡 ใส่รหัสผ่านเพื่อเข้าดู Dashboard")
+        password = st.text_input("🔑 รหัสผ่าน (Password):", type="password")
+        
+        if st.button("เข้าสู่ระบบ (Login)", use_container_width=True):
+            if password == "123456":  # 👈 พี่ Louis สามารถเปลี่ยนรหัสผ่านตรงนี้ได้เลยครับ!
+                st.session_state["authenticated"] = True
+                st.rerun() 
+            else:
+                st.error("❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่!")
+                
+    st.stop() # 🛑 หยุดการประมวลผลโค้ดด้านล่างทั้งหมด ถ้ายังไม่ได้ล็อกอิน!
+
+# ==========================================
+# 2. CSS (Theme: Enterprise Clean)
+# ==========================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
@@ -27,10 +55,10 @@ st.markdown("""
 
     [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0; }
     
-    /* 💥 แก้ไข: สั่งให้ตัวหนังสือดำเฉพาะหัวข้อ ไม่ลามไปทับช่องวันที่ */
+    /* สั่งให้ตัวหนังสือดำเฉพาะหัวข้อ ไม่ลามไปทับช่องวันที่ */
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #0F172A !important; font-weight: 600 !important; } 
     
-    /* 💥 แก้ไข: รวมกล่อง Date Input ให้มีพื้นหลังขาว/ขอบเทา เหมือนกล่อง Multiselect */
+    /* รวมกล่อง Date Input ให้มีพื้นหลังขาว/ขอบเทา เหมือนกล่อง Multiselect */
     div[data-baseweb="select"] > div, div[data-testid="stDateInput"] > div { 
         background-color: #F8FAFC !important; 
         border: 1px solid #CBD5E1 !important; 
@@ -40,7 +68,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ฟังก์ชัน KPI Card
+# ==========================================
+# 3. ฟังก์ชันและ Helper
+# ==========================================
 def create_kpi_card(title, value, accent_color, bg_icon_color):
     html = f"""
     <div style="background-color: #ffffff; padding: 24px 20px; border-radius: 12px; 
@@ -55,9 +85,6 @@ def create_kpi_card(title, value, accent_color, bg_icon_color):
 def section_title(text, icon=""):
     st.markdown(f"<h3 style='color: #0F172A; font-weight: 700; margin-top: 10px; margin-bottom: 15px;'>{icon} {text}</h3>", unsafe_allow_html=True)
 
-# ==========================================
-# 2. ฟังก์ชันคำนวณ SLA
-# ==========================================
 def parse_sla_to_mins(sla_text):
     if pd.isna(sla_text): return 0
     text = str(sla_text)
@@ -87,7 +114,7 @@ def get_sla_status_label(row):
         else: return '🟢 ปกติ'
 
 # ==========================================
-# 3. โหลดและจัดการข้อมูล
+# 4. โหลดและจัดการข้อมูล
 # ==========================================
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRVUhShKYRay7zI0R4LcD9YBoe9VaZHIYvSRMWNXBAMDFws78ImtPqVPAfqKSvD_4lua8dgJm1OTaG/pub?output=csv"
 
@@ -119,9 +146,15 @@ try:
     df = load_and_prep_data(SHEET_URL)
     
     # ==========================================
-    # 4. Sidebar Filter (กรองอิสระข้ามกลุ่ม 100%)
+    # 5. Sidebar Filter (กรองอิสระ)
     # ==========================================
-    st.sidebar.markdown("<h2 style='color:#0F172A; font-weight: 800;'>🎯 ตัวกรองข้อมูล</h2>", unsafe_allow_html=True)
+    
+    # 💡 ปุ่ม Logout อยู่ด้านบนของเมนูซ้ายมือ
+    if st.sidebar.button("🚪 ล็อกเอาท์ (Logout)", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.rerun()
+        
+    st.sidebar.markdown("<h2 style='color:#0F172A; font-weight: 800; margin-top: 15px;'>🎯 ตัวกรองข้อมูล</h2>", unsafe_allow_html=True)
     st.sidebar.markdown("<hr style='margin-top: 5px; margin-bottom: 20px;'>", unsafe_allow_html=True)
     
     min_date, max_date = df['Received_Date'].min(), df['Received_Date'].max()
@@ -144,7 +177,7 @@ try:
     if selected_sla: df_filtered = df_filtered[df_filtered['sla_status_label'].isin(selected_sla)]
 
     # ==========================================
-    # 5. Dashboard Layout
+    # 6. Dashboard Layout
     # ==========================================
     st.markdown("<h1 style='color: #0F172A; font-weight: 800;'>📊 Helpdesk Enterprise Analytics</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #64748B; margin-top: -15px; margin-bottom: 25px;'>คลิกที่แท่งกราฟแผนก เพื่อดูข้อมูลเจาะลึก | ดับเบิลคลิกเพื่อยกเลิก</p>", unsafe_allow_html=True)
@@ -224,7 +257,7 @@ try:
             fig_trend.update_yaxes(range=[0, trend_df['Cases'].max() * 1.3]) 
             st.plotly_chart(fig_trend, use_container_width=True, theme=None)
 
-    # --- 💥 กราฟวงกลม 2 อัน (แก้ไม้ตาย: ถ่าง Margin ให้กว้างสุดๆ เพื่อย่อวงกลมลง) ---
+    # --- 💥 กราฟวงกลม 2 อัน ---
     with donuts_zone:
         col_pie1, col_pie2 = st.columns(2)
         
@@ -243,7 +276,6 @@ try:
                 marker=dict(line=dict(color='#FFFFFF', width=2))
             )
             fig_status.update_layout(**pro_layout)
-            # 💥 THE FIX: ถ่างระยะขอบซ้าย-ขวาเป็น 160px และบน-ล่าง 120px เพื่อบีบวงกลมให้เล็กลง Label จะได้ไม่ชนขอบ
             fig_status.update_layout(height=500, showlegend=False, margin=dict(t=120, b=120, l=160, r=160))
             st.plotly_chart(fig_status, use_container_width=True, theme=None)
 
@@ -263,7 +295,6 @@ try:
                 marker=dict(line=dict(color='#FFFFFF', width=2))
             )
             fig_sla.update_layout(**pro_layout)
-            # 💥 THE FIX: ใช้ margin ชุดเดียวกันเพื่อให้ขนาดวงกลมเท่ากันพอดีเป๊ะ
             fig_sla.update_layout(height=500, showlegend=False, margin=dict(t=120, b=120, l=160, r=160))
             st.plotly_chart(fig_sla, use_container_width=True, theme=None)
 
@@ -293,4 +324,5 @@ try:
 
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการรันระบบ: {e}")
+
 
