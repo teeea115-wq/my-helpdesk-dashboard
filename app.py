@@ -12,11 +12,9 @@ st.set_page_config(page_title="Helpdesk Executive Analytics", page_icon="📈", 
 # ==========================================
 # 🔒 ระบบ Login ป้องกันคนนอก
 # ==========================================
-# เช็คสถานะการล็อกอิน
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
-# ถ้ายังไม่ได้ล็อกอิน ให้แสดงหน้าจอใส่รหัสผ่าน
 if not st.session_state["authenticated"]:
     st.markdown("<br><br><h2 style='text-align: center; color: #0F172A;'>🔒 Helpdesk Analytics Login</h2>", unsafe_allow_html=True)
     
@@ -26,16 +24,17 @@ if not st.session_state["authenticated"]:
         password = st.text_input("🔑 รหัสผ่าน (Password):", type="password")
         
         if st.button("เข้าสู่ระบบ (Login)", use_container_width=True):
-            if password == "123456":  # 👈 พี่ Louis สามารถเปลี่ยนรหัสผ่านตรงนี้ได้เลยครับ!
+            if password == "123456":  
                 st.session_state["authenticated"] = True
                 st.rerun() 
             else:
                 st.error("❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่!")
                 
-    st.stop() # 🛑 หยุดการประมวลผลโค้ดด้านล่างทั้งหมด ถ้ายังไม่ได้ล็อกอิน!
+    st.stop() 
 
 # ==========================================
-# 2. CSS (Theme: Enterprise Clean)
+# 2. CSS (Theme: Enterprise Clean) 
+# 💥 อัปเดต: แก้ปัญหากล่องดำ และปุ่มกลืนกับพื้นหลัง
 # ==========================================
 st.markdown("""
 <style>
@@ -55,16 +54,35 @@ st.markdown("""
 
     [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0; }
     
-    /* สั่งให้ตัวหนังสือดำเฉพาะหัวข้อ ไม่ลามไปทับช่องวันที่ */
+    /* สั่งให้ตัวหนังสือดำเฉพาะหัวข้อ ไม่ลามไปทับช่องอื่นๆ */
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #0F172A !important; font-weight: 600 !important; } 
     
-    /* รวมกล่อง Date Input ให้มีพื้นหลังขาว/ขอบเทา เหมือนกล่อง Multiselect */
-    div[data-baseweb="select"] > div, div[data-testid="stDateInput"] > div { 
-        background-color: #F8FAFC !important; 
+    /* 💥 แก้ไขไม้ตาย: บังคับกล่องทุกชนิด (Multiselect, Date Input, Text Input) ให้เป็นสีขาว ตัวอักษรดำ */
+    div[data-baseweb="select"] > div, 
+    div[data-testid="stDateInput"] > div, div[data-testid="stDateInput"] input,
+    div[data-testid="stTextInput"] > div, div[data-testid="stTextInput"] input { 
+        background-color: #FFFFFF !important; 
         border: 1px solid #CBD5E1 !important; 
         border-radius: 6px !important; 
+        color: #0F172A !important; /* บังคับตัวอักษรข้างในให้เป็นสีดำ */
     }
+    
+    /* ป้าย Tag สีฟ้าใน Multiselect */
     span[data-baseweb="tag"] { background-color: #E0E7FF !important; color: #3730A3 !important; border: none !important; border-radius: 4px; font-weight: 600; }
+    
+    /* 💥 แก้ไข: บังคับปุ่ม (Login, Logout) ให้เป็นสีขาวขอบเทา ตัวหนังสือดำ อ่านง่าย */
+    button[kind="secondary"] {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border: 1px solid #CBD5E1 !important;
+        font-weight: 600 !important;
+    }
+    /* สีปุ่มตอนเอาเมาส์ชี้ */
+    button[kind="secondary"]:hover {
+        border-color: #3B82F6 !important;
+        color: #3B82F6 !important;
+        background-color: #EFF6FF !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,7 +167,7 @@ try:
     # 5. Sidebar Filter (กรองอิสระ)
     # ==========================================
     
-    # 💡 ปุ่ม Logout อยู่ด้านบนของเมนูซ้ายมือ
+    # ปุ่ม Logout อยู่ด้านบนของเมนูซ้ายมือ
     if st.sidebar.button("🚪 ล็อกเอาท์ (Logout)", use_container_width=True):
         st.session_state["authenticated"] = False
         st.rerun()
@@ -257,7 +275,7 @@ try:
             fig_trend.update_yaxes(range=[0, trend_df['Cases'].max() * 1.3]) 
             st.plotly_chart(fig_trend, use_container_width=True, theme=None)
 
-    # --- 💥 กราฟวงกลม 2 อัน ---
+    # --- กราฟวงกลม 2 อัน ---
     with donuts_zone:
         col_pie1, col_pie2 = st.columns(2)
         
