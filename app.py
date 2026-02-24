@@ -5,18 +5,78 @@ import plotly.graph_objects as go
 import re
 
 # ==========================================
-# 1. ตั้งค่าหน้าเว็บ (ต้องอยู่บรรทัดแรกสุดเสมอ)
+# 1. ตั้งค่าหน้าเว็บ (บรรทัดแรกสุดเสมอ)
 # ==========================================
 st.set_page_config(page_title="Helpdesk Executive Analytics", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# 🔒 ระบบ Login ป้องกันคนนอก
+# 2. CSS (ย้ายมาไว้บนสุด เพื่อให้คลุมถึงหน้า Login ด้วย!)
+# ==========================================
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+    
+    /* บังคับให้ทั้งแอปเป็น Light Mode (พื้นขาว/เทาอ่อน ตัวหนังสือดำ) */
+    html, body, [class*="css"], .stApp { 
+        font-family: 'Prompt', sans-serif !important; 
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
+    }
+    
+    /* บังคับตัวหนังสือทุกจุดให้เป็นสีดำ (แก้ปัญหาโหมดมืดกลืนตัวหนังสือ) */
+    p, label, h1, h2, h3, h4, h5, h6 { color: #0F172A !important; font-weight: 600 !important; }
+
+    /* การ์ดกราฟและตาราง */
+    div.stPlotlyChart, div[data-testid="stDataFrame"] {
+        background-color: #ffffff !important;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        border: 1px solid #E2E8F0 !important;
+        margin-bottom: 24px; 
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; }
+    
+    /* 💥 แก้ปัญหาช่องวันที่และช่อง Login ดำมืด */
+    div[data-testid="stDateInput"] div, 
+    div[data-testid="stTextInput"] div, 
+    div[data-baseweb="select"] > div,
+    input { 
+        background-color: #FFFFFF !important; 
+        color: #0F172A !important; 
+        border-color: #CBD5E1 !important; 
+        border-radius: 6px !important; 
+    }
+    
+    /* ป้าย Tag สีฟ้าในช่องเลือก */
+    span[data-baseweb="tag"] { background-color: #E0E7FF !important; color: #3730A3 !important; border: none !important; border-radius: 4px; font-weight: 600; }
+    
+    /* 💥 แก้ปัญหาปุ่มกด (Login / Logout) สีกลืน */
+    div[data-testid="stButton"] button {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border: 1px solid #CBD5E1 !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="stButton"] button:hover {
+        border-color: #3B82F6 !important;
+        color: #3B82F6 !important;
+        background-color: #EFF6FF !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 3. 🔒 ระบบ Login ป้องกันคนนอก
 # ==========================================
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    st.markdown("<br><br><h2 style='text-align: center; color: #0F172A;'>🔒 Helpdesk Analytics Login</h2>", unsafe_allow_html=True)
+    # ถอดสีที่ล็อกไว้ออก ให้ CSS ด้านบนจัดการแทน
+    st.markdown("<br><br><h2 style='text-align: center;'>🔒 Helpdesk Analytics Login</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
@@ -30,64 +90,10 @@ if not st.session_state["authenticated"]:
             else:
                 st.error("❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่!")
                 
-    st.stop() 
+    st.stop() # หยุดตรงนี้ถ้ายังไม่ล็อกอิน
 
 # ==========================================
-# 2. CSS (Theme: Enterprise Clean) 
-# 💥 อัปเดต: แก้ปัญหากล่องดำ และปุ่มกลืนกับพื้นหลัง
-# ==========================================
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
-    html, body, [class*="css"]  { font-family: 'Prompt', sans-serif !important; }
-    
-    .stApp { background-color: #F8FAFC; }
-    
-    div.stPlotlyChart, div[data-testid="stDataFrame"] {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        border: 1px solid #E2E8F0;
-        margin-bottom: 24px; 
-    }
-
-    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0; }
-    
-    /* สั่งให้ตัวหนังสือดำเฉพาะหัวข้อ ไม่ลามไปทับช่องอื่นๆ */
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #0F172A !important; font-weight: 600 !important; } 
-    
-    /* 💥 แก้ไขไม้ตาย: บังคับกล่องทุกชนิด (Multiselect, Date Input, Text Input) ให้เป็นสีขาว ตัวอักษรดำ */
-    div[data-baseweb="select"] > div, 
-    div[data-testid="stDateInput"] > div, div[data-testid="stDateInput"] input,
-    div[data-testid="stTextInput"] > div, div[data-testid="stTextInput"] input { 
-        background-color: #FFFFFF !important; 
-        border: 1px solid #CBD5E1 !important; 
-        border-radius: 6px !important; 
-        color: #0F172A !important; /* บังคับตัวอักษรข้างในให้เป็นสีดำ */
-    }
-    
-    /* ป้าย Tag สีฟ้าใน Multiselect */
-    span[data-baseweb="tag"] { background-color: #E0E7FF !important; color: #3730A3 !important; border: none !important; border-radius: 4px; font-weight: 600; }
-    
-    /* 💥 แก้ไข: บังคับปุ่ม (Login, Logout) ให้เป็นสีขาวขอบเทา ตัวหนังสือดำ อ่านง่าย */
-    button[kind="secondary"] {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
-        font-weight: 600 !important;
-    }
-    /* สีปุ่มตอนเอาเมาส์ชี้ */
-    button[kind="secondary"]:hover {
-        border-color: #3B82F6 !important;
-        color: #3B82F6 !important;
-        background-color: #EFF6FF !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ==========================================
-# 3. ฟังก์ชันและ Helper
+# 4. ฟังก์ชันและ Helper
 # ==========================================
 def create_kpi_card(title, value, accent_color, bg_icon_color):
     html = f"""
@@ -132,7 +138,7 @@ def get_sla_status_label(row):
         else: return '🟢 ปกติ'
 
 # ==========================================
-# 4. โหลดและจัดการข้อมูล
+# 5. โหลดและจัดการข้อมูล
 # ==========================================
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRVUhShKYRay7zI0R4LcD9YBoe9VaZHIYvSRMWNXBAMDFws78ImtPqVPAfqKSvD_4lua8dgJm1OTaG/pub?output=csv"
 
@@ -164,15 +170,14 @@ try:
     df = load_and_prep_data(SHEET_URL)
     
     # ==========================================
-    # 5. Sidebar Filter (กรองอิสระ)
+    # 6. Sidebar Filter
     # ==========================================
     
-    # ปุ่ม Logout อยู่ด้านบนของเมนูซ้ายมือ
     if st.sidebar.button("🚪 ล็อกเอาท์ (Logout)", use_container_width=True):
         st.session_state["authenticated"] = False
         st.rerun()
         
-    st.sidebar.markdown("<h2 style='color:#0F172A; font-weight: 800; margin-top: 15px;'>🎯 ตัวกรองข้อมูล</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h2 style='margin-top: 15px;'>🎯 ตัวกรองข้อมูล</h2>", unsafe_allow_html=True)
     st.sidebar.markdown("<hr style='margin-top: 5px; margin-bottom: 20px;'>", unsafe_allow_html=True)
     
     min_date, max_date = df['Received_Date'].min(), df['Received_Date'].max()
@@ -195,9 +200,9 @@ try:
     if selected_sla: df_filtered = df_filtered[df_filtered['sla_status_label'].isin(selected_sla)]
 
     # ==========================================
-    # 6. Dashboard Layout
+    # 7. Dashboard Layout
     # ==========================================
-    st.markdown("<h1 style='color: #0F172A; font-weight: 800;'>📊 Helpdesk Enterprise Analytics</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>📊 Helpdesk Enterprise Analytics</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #64748B; margin-top: -15px; margin-bottom: 25px;'>คลิกที่แท่งกราฟแผนก เพื่อดูข้อมูลเจาะลึก | ดับเบิลคลิกเพื่อยกเลิก</p>", unsafe_allow_html=True)
 
     kpi_zone = st.container()
@@ -275,7 +280,7 @@ try:
             fig_trend.update_yaxes(range=[0, trend_df['Cases'].max() * 1.3]) 
             st.plotly_chart(fig_trend, use_container_width=True, theme=None)
 
-    # --- กราฟวงกลม 2 อัน ---
+    # --- 💥 กราฟวงกลม 2 อัน (แก้ไม้ตาย: เพิ่ม Height และถ่าง Margin บน-ล่างสุดๆ) ---
     with donuts_zone:
         col_pie1, col_pie2 = st.columns(2)
         
@@ -294,7 +299,8 @@ try:
                 marker=dict(line=dict(color='#FFFFFF', width=2))
             )
             fig_status.update_layout(**pro_layout)
-            fig_status.update_layout(height=500, showlegend=False, margin=dict(t=120, b=120, l=160, r=160))
+            # 💥 เพิ่มความสูงเป็น 600px และถ่างขอบบน-ล่างให้กว้างถึง 150px!
+            fig_status.update_layout(height=600, showlegend=False, margin=dict(t=150, b=150, l=150, r=150))
             st.plotly_chart(fig_status, use_container_width=True, theme=None)
 
         with col_pie2:
@@ -313,7 +319,8 @@ try:
                 marker=dict(line=dict(color='#FFFFFF', width=2))
             )
             fig_sla.update_layout(**pro_layout)
-            fig_sla.update_layout(height=500, showlegend=False, margin=dict(t=120, b=120, l=160, r=160))
+            # 💥 เพิ่มความสูงเป็น 600px และถ่างขอบบน-ล่างให้กว้างถึง 150px!
+            fig_sla.update_layout(height=600, showlegend=False, margin=dict(t=150, b=150, l=150, r=150))
             st.plotly_chart(fig_sla, use_container_width=True, theme=None)
 
     # --- โซนตาราง ---
